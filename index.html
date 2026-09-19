@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VISARJAN - Don't Let the Light Go Out</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- HUD Overlay -->
+        <div id="hud" class="hidden">
+            <div class="hud-top">
+                <div class="hud-item score-container">SCORE: <span id="score">0</span></div>
+                <div class="hud-center">
+                    <div class="flame-label">FLAME</div>
+                    <div class="flame-bar-bg">
+                        <div id="flame-bar-fill"></div>
+                    </div>
+                </div>
+                <div class="hud-item distance-container">DIST: <span id="distance">0</span>m</div>
+            </div>
+            
+            <div id="progress-bar-container">
+                <span class="progress-label">BEGINNING</span>
+                <div class="progress-track">
+                    <div id="progress-indicator">●</div>
+                </div>
+                <span class="progress-label">VISARJAN</span>
+            </div>
+            
+            <div class="hud-bottom">
+                <div class="hud-item devotion-container">
+                    <div class="devotion-label">DEVOTION</div>
+                    <div class="devotion-bar-bg">
+                        <div id="devotion-bar-fill"></div>
+                    </div>
+                </div>
+                <div class="hud-item dash-container">
+                    <div id="dash-indicator">DASH READY</div>
+                </div>
+            </div>
+            
+            <div id="bappa-blessing-text" class="hidden">BAPPA BLESSING ACTIVE!</div>
+            <div id="section-title" class="hidden">THE BEGINNING</div>
+            <div id="critical-warning" class="hidden"></div>
+            
+            <!-- Debug Overlay -->
+            <div id="debug-overlay" class="hidden">
+                <div>FPS: <span id="debug-fps">0</span></div>
+                <div>Player X: <span id="debug-px">0</span> | Y: <span id="debug-py">0</span></div>
+                <div>VelocityY: <span id="debug-vy">0</span></div>
+                <div>Grounded: <span id="debug-grounded">false</span></div>
+                <div>Jumping: <span id="debug-jumping">false</span></div>
+                <div>Distance: <span id="debug-dist">0</span></div>
+                <div>Flame: <span id="debug-flame">0</span></div>
+                <div>Devotion: <span id="debug-dev">0</span></div>
+                <div>Entities: <span id="debug-ents">0</span></div>
+                <div>Section: <span id="debug-section">0</span></div>
+                <div>Dash CD: <span id="debug-dash">0</span></div>
+            </div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen">
+            <h1 class="title">VISARJAN</h1>
+            <p class="subtitle">DON'T LET THE LIGHT GO OUT</p>
+            
+            <div class="menu-buttons">
+                <button id="btn-play">PLAY</button>
+                <button id="btn-tutorial">HOW TO PLAY</button>
+                <button id="btn-sound">SOUND: ON</button>
+            </div>
+            
+            <div class="high-score-display">HIGH SCORE: <span id="menu-high-score">0</span></div>
+        </div>
+
+        <!-- Tutorial Screen -->
+        <div id="screen-tutorial" class="screen hidden">
+            <h2>HOW TO PLAY</h2>
+            <div class="tutorial-content">
+                <p>Move freely through Bappa's final journey.<br>
+                Collect oil and diyas. Jump over obstacles.<br>
+                Keep the sacred flame alive.</p>
+                <div class="controls-diagram">
+                    <div class="control-key">A / ← &nbsp;&nbsp;&nbsp; D / →<br><small>MOVE</small></div>
+                    <div class="control-key">SPACE / ↑<br><small>JUMP</small></div>
+                    <div class="control-key">SHIFT<br><small>DASH</small></div>
+                </div>
+            </div>
+            <button class="btn" id="btn-start-game">START JOURNEY</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen hidden">
+            <h2 class="game-over-title">THE LIGHT WENT OUT</h2>
+            
+            <div class="stats-container">
+                <div class="stat-row"><span>SCORE:</span> <span id="go-score">0</span></div>
+                <div class="stat-row"><span>DISTANCE:</span> <span id="go-distance">0</span></div>
+                <div class="stat-row high-score-row"><span>HIGH SCORE:</span> <span id="go-high-score">0</span></div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button id="btn-retry">TRY AGAIN</button>
+                <button id="btn-main-menu">MAIN MENU</button>
+            </div>
+        </div>
+
+        <!-- Visarjan Ending Screen -->
+        <div id="ending-screen" class="screen hidden">
+            <h2 class="ending-title">गणपति बप्पा मोरया</h2>
+            <p class="ending-subtitle">The Journey is Complete</p>
+            
+            <div class="stats-container ending-stats">
+                <div class="stat-row"><span>BASE SCORE:</span> <span id="end-score">0</span></div>
+                <div class="stat-row"><span>DISTANCE:</span> <span id="end-distance">0</span></div>
+                <div class="stat-row"><span>FLAME BONUS:</span> <span id="end-flame-bonus">0</span></div>
+                <div class="stat-row"><span>VISARJAN BONUS:</span> <span>500</span></div>
+                <div class="stat-row total-score"><span>TOTAL SCORE:</span> <span id="end-total">0</span></div>
+                <div id="new-high-score-msg" class="hidden">NEW HIGH SCORE!</div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button id="btn-play-again">PLAY AGAIN</button>
+            </div>
+        </div>
+        
+        <!-- Touch Controls (Mobile Only) -->
+        <div id="touch-controls">
+            <div id="touch-left" class="touch-btn">◄</div>
+            <div id="touch-jump" class="touch-btn">▲<br>JUMP</div>
+            <div id="touch-right" class="touch-btn">►</div>
+            <div id="touch-dash" class="touch-btn">DASH</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/environment.js"></script>
+    <script src="js/flame.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
