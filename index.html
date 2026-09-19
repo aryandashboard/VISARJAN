@@ -58,9 +58,10 @@
                 <div>Distance: <span id="debug-dist">0</span></div>
                 <div>Flame: <span id="debug-flame">0</span></div>
                 <div>Devotion: <span id="debug-dev">0</span></div>
-                <div>Entities: <span id="debug-ents">0</span></div>
+                <div>Active Entities: <span id="debug-ents">0</span></div>
                 <div>Section: <span id="debug-section">0</span></div>
-                <div>Dash CD: <span id="debug-dash">0</span></div>
+                <div>Dash: <span id="debug-dash">0</span></div>
+                <div>Generated Until: <span id="debug-generated">0</span></div>
             </div>
         </div>
 
@@ -98,36 +99,17 @@
         <div id="game-over-screen" class="screen hidden">
             <h2 class="game-over-title">THE LIGHT WENT OUT</h2>
             
-            <div class="stats-container">
-                <div class="stat-row"><span>SCORE:</span> <span id="go-score">0</span></div>
-                <div class="stat-row"><span>DISTANCE:</span> <span id="go-distance">0</span></div>
-                <div class="stat-row high-score-row"><span>HIGH SCORE:</span> <span id="go-high-score">0</span></div>
+            <div class="score-display">
+                <div>SCORE: <span id="final-score-val">0</span></div>
+                <div>DISTANCE: <span id="final-distance-val">0</span></div>
+                <div>BEST SCORE: <span id="best-score-val">0</span></div>
             </div>
             
-            <div class="menu-buttons">
-                <button id="btn-retry">TRY AGAIN</button>
-                <button id="btn-main-menu">MAIN MENU</button>
-            </div>
+            <button class="btn" id="btn-restart">PLAY AGAIN</button>
+            <button class="btn btn-secondary" id="btn-menu-from-gameover">MAIN MENU</button>
         </div>
 
-        <!-- Visarjan Ending Screen -->
-        <div id="ending-screen" class="screen hidden">
-            <h2 class="ending-title">गणपति बप्पा मोरया</h2>
-            <p class="ending-subtitle">The Journey is Complete</p>
-            
-            <div class="stats-container ending-stats">
-                <div class="stat-row"><span>BASE SCORE:</span> <span id="end-score">0</span></div>
-                <div class="stat-row"><span>DISTANCE:</span> <span id="end-distance">0</span></div>
-                <div class="stat-row"><span>FLAME BONUS:</span> <span id="end-flame-bonus">0</span></div>
-                <div class="stat-row"><span>VISARJAN BONUS:</span> <span>500</span></div>
-                <div class="stat-row total-score"><span>TOTAL SCORE:</span> <span id="end-total">0</span></div>
-                <div id="new-high-score-msg" class="hidden">NEW HIGH SCORE!</div>
-            </div>
-            
-            <div class="menu-buttons">
-                <button id="btn-play-again">PLAY AGAIN</button>
-            </div>
-        </div>
+        <!-- Ending Screen removed for Endless Mode -->
         
         <!-- Touch Controls (Mobile Only) -->
         <div id="touch-controls">

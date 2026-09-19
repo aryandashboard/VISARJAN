@@ -3,9 +3,8 @@ class UI {
         // DOM Elements
         this.screens = {
             menu: document.getElementById('main-menu'),
-            tutorial: document.getElementById('tutorial-screen'),
-            gameOver: document.getElementById('game-over-screen'),
-            ending: document.getElementById('ending-screen')
+            tutorial: document.getElementById('screen-tutorial'),
+            gameOver: document.getElementById('game-over-screen')
         };
         
         this.hud = document.getElementById('hud');
@@ -32,7 +31,8 @@ class UI {
             debugDev: document.getElementById('debug-dev'),
             debugEnts: document.getElementById('debug-ents'),
             debugSection: document.getElementById('debug-section'),
-            debugDash: document.getElementById('debug-dash')
+            debugDash: document.getElementById('debug-dash'),
+            debugGenerated: document.getElementById('debug-generated')
         };
         
         this.bindEvents();
@@ -67,23 +67,24 @@ class UI {
         });
         
         // Game Over
-        document.getElementById('btn-retry').addEventListener('click', () => {
-            this.hideAllScreens();
-            Game.startGame();
-        });
+        const btnRestart = document.getElementById('btn-restart');
+        if (btnRestart) {
+            btnRestart.addEventListener('click', () => {
+                Game.audio.init();
+                this.hideAllScreens();
+                Game.startGame();
+            });
+        }
         
-        document.getElementById('btn-main-menu').addEventListener('click', () => {
-            this.hideAllScreens();
-            this.screens.menu.classList.remove('hidden');
-            Game.state = 'MENU';
-        });
+        const btnMenuGO = document.getElementById('btn-menu-from-gameover');
+        if (btnMenuGO) {
+            btnMenuGO.addEventListener('click', () => {
+                this.hideAllScreens();
+                this.screens.menu.classList.remove('hidden');
+            });
+        }
         
-        // Ending
-        document.getElementById('btn-play-again').addEventListener('click', () => {
-            this.hideAllScreens();
-            this.screens.menu.classList.remove('hidden');
-            Game.state = 'MENU';
-        });
+        // Ending removed
     }
     
     hideAllScreens() {
@@ -137,8 +138,8 @@ class UI {
             this.els.dashInd.innerText = `COOLDOWN: ${Math.ceil(Game.player.dashCooldownTimer)}s`;
         }
         
-        // Progress Indicator
-        const progressPercent = Math.min(100, (Game.distance / Game.config.maxDistance) * 100);
+        // Progress Indicator (Loops per chunk)
+        const progressPercent = ((Game.distance % Game.config.chunkSize) / Game.config.chunkSize) * 100;
         this.els.progressInd.style.left = `${progressPercent}%`;
         
         // Debug update
@@ -149,9 +150,10 @@ class UI {
             this.els.debugDist.innerText = Math.round(Game.distance);
             this.els.debugFlame.innerText = Math.round(Game.flame.current);
             this.els.debugDev.innerText = Math.round(Game.flame.devotion);
-            this.els.debugEnts.innerText = Game.entities.collectibles.length + Game.entities.obstacles.length;
+            this.els.debugEnts.innerText = Game.entities.obstacles.length + Game.entities.collectibles.length;
             this.els.debugSection.innerText = Game.currentSection;
-            this.els.debugDash.innerText = Math.max(0, Game.player.dashCooldownTimer).toFixed(1);
+            this.els.debugDash.innerText = Math.round(Game.player.dashCooldownTimer * 10) / 10;
+            this.els.debugGenerated.innerText = Math.floor(Game.entities.generatedUntil) + "m";
         }
     }
     
@@ -190,41 +192,13 @@ class UI {
     }
     
     showGameOver() {
-        this.hud.classList.add('hidden');
-        this.els.criticalWarning.classList.add('hidden');
+        this.hideAllScreens();
+        
+        document.getElementById('final-score-val').innerText = Math.floor(Game.score);
+        document.getElementById('final-distance-val').innerText = Math.floor(Game.distance) + "m";
+        document.getElementById('best-score-val').innerText = Game.highScore;
+        
         this.screens.gameOver.classList.remove('hidden');
-        
-        document.getElementById('go-score').innerText = Math.floor(Game.score);
-        document.getElementById('go-distance').innerText = Math.floor(Game.distance);
-        document.getElementById('go-high-score').innerText = Game.highScore;
-        
         this.updateMenuHighScore(Game.highScore);
-    }
-    
-    showEnding(baseScore, flameBonus, total, isNewHigh) {
-        // Smoothly fade out the HUD
-        this.hud.style.transition = 'opacity 2s ease';
-        this.hud.style.opacity = 0;
-        this.els.criticalWarning.classList.add('hidden');
-        
-        setTimeout(() => {
-            this.hud.classList.add('hidden');
-            this.hud.style.opacity = 1;
-            this.screens.ending.classList.remove('hidden');
-            
-            document.getElementById('end-score').innerText = Math.floor(baseScore);
-            document.getElementById('end-distance').innerText = Math.floor(Game.distance);
-            document.getElementById('end-flame-bonus').innerText = flameBonus;
-            document.getElementById('end-total').innerText = total;
-            
-            const newHighMsg = document.getElementById('new-high-score-msg');
-            if (isNewHigh) {
-                newHighMsg.classList.remove('hidden');
-            } else {
-                newHighMsg.classList.add('hidden');
-            }
-            
-            this.updateMenuHighScore(Game.highScore);
-        }, 2000);
     }
 }

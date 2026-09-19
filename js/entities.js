@@ -20,32 +20,42 @@ class EntityManager {
             { type: 'GOLDEN_DIYA', flame: 40, score: 100, dev: 50, color: '#ffffff', chance: 2, emoji: '✨' }
         ];
         
-        // The level is pre-populated, so we just reset the arrays
-        this.populateLevel();
+        this.generatedUntil = 0;
+        
+        // Initial Explicit Tutorial Sequence
+        this.spawnAt(250, 'FLOWER', false);
+        this.spawnAt(450, 'OIL', false);
+        this.spawnAt(650, 'OBSTACLE');
+        this.spawnAt(850, 'DIYA', false);
+        this.spawnAt(1100, 'OBSTACLE');
+        this.spawnAt(1300, 'DIYA', true);
+        this.spawnAt(1500, 'GOLDEN_DIYA', false);
+        
+        this.generatedUntil = 1800;
+        
+        // Generate initial chunks
+        this.generateChunk(1800, 4000);
     }
     
-    populateLevel() {
-        // Explicit tutorial sequence
-        const explicitItems = [
-            { x: 250, type: 'FLOWER', airborne: false },
-            { x: 450, type: 'OIL', airborne: false },
-            { x: 650, type: 'OBSTACLE' },
-            { x: 850, type: 'DIYA', airborne: false },
-            { x: 1100, type: 'OBSTACLE' },
-            { x: 1300, type: 'DIYA', airborne: true },
-            { x: 1500, type: 'GOLDEN_DIYA', airborne: false }
-        ];
+    generateChunk(startX, endX) {
+        let currentX = startX;
         
-        explicitItems.forEach(item => this.spawnAt(item.x, item.type, item.airborne));
+        // Difficulty scalar based on distance
+        let diffScalar = Math.min(1.0, currentX / 10000); // Caps at 10000m
+        let obstacleChance = 0.3 + (diffScalar * 0.3); // Scales from 30% to 60%
+        let minGap = 200 - (diffScalar * 50); // Scales from 200 to 150
         
-        // Randomly fill the rest of the world up to max distance
-        let currentX = 1800;
-        let maxDist = Game.config.maxDistance;
-        while(currentX < maxDist - 300) {
-            let isObstacle = Math.random() < 0.3;
+        while (currentX < endX) {
+            let isObstacle = Math.random() < obstacleChance;
+            
+            // Introduce combinatory logic at higher difficulties (both obstacle and item at same X)
+            let isCombo = isObstacle && Math.random() < diffScalar;
+            
             if (isObstacle) {
                 this.spawnAt(currentX, 'OBSTACLE');
-            } else {
+            }
+            
+            if (!isObstacle || isCombo) {
                 // Pick random item
                 let roll = Math.random() * 100;
                 let currentAccum = 0;
@@ -57,11 +67,16 @@ class EntityManager {
                         break;
                     }
                 }
-                let airborne = Math.random() < 0.2;
+                
+                // If combo, MUST be airborne so it's jumpable over the obstacle
+                let airborne = isCombo ? true : Math.random() < 0.2;
                 this.spawnAt(currentX, selectedType.type, airborne);
             }
-            currentX += 200 + Math.random() * 150; // Random gap
+            
+            currentX += minGap + Math.random() * 150; // Random gap
         }
+        
+        this.generatedUntil = endX;
     }
     
     spawnAt(x, typeStr, airborne = false) {
@@ -93,11 +108,24 @@ class EntityManager {
     }
     
     update(dt) {
-        if (Game.state !== 'PLAYING' || Game.environment.isVisarjan) return;
+        if (Game.state !== 'PLAYING') return;
+        
+        // Endless Generation Check
+        if (Game.player.x > this.generatedUntil - 2000) {
+            this.generateChunk(this.generatedUntil, this.generatedUntil + 3000);
+        }
+        
+        const cleanupThreshold = Game.camera.x - 1500; // Aggressive Garbage Collection
         
         // Update Collectibles
         for (let i = this.collectibles.length - 1; i >= 0; i--) {
             let c = this.collectibles[i];
+            
+            // Garbage collection
+            if (c.x < cleanupThreshold) {
+                this.collectibles.splice(i, 1);
+                continue;
+            }
             
             // Hover animation
             c.hoverOffset = Math.sin(Date.now() * 0.005 + c.id) * 10;
@@ -113,6 +141,12 @@ class EntityManager {
         // Update Obstacles
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
             let o = this.obstacles[i];
+            
+            // Garbage collection
+            if (o.x < cleanupThreshold) {
+                this.obstacles.splice(i, 1);
+                continue;
+            }
             
             // Collision with player
             if (!o.hit && this.checkCollision(Game.player.getBounds(), this.getBounds(o))) {

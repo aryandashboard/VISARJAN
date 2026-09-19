@@ -40,7 +40,7 @@ const Game = {
     // Config
     config: {
         baseSpeed: 400, // Movement speed for player
-        maxDistance: 3000, // Distance to reach Visarjan
+        chunkSize: 3000, // Distance per endless progression cycle
         dashDuration: 1.0, // Seconds
         dashCooldown: 2.5, // Seconds
         flameDrainNormal: 1.5, // % per second
@@ -180,26 +180,7 @@ const Game = {
         this.ui.showGameOver();
     },
     
-    triggerVisarjan() {
-        this.state = 'VISARJAN';
-        this.audio.stopAmbient();
-        this.audio.playVisarjan();
-        
-        // Clear obstacles, spawn flowers and floating diyas
-        this.entities.obstacles = [];
-        this.environment.setVisarjanMode();
-        
-        setTimeout(() => {
-            let total = this.score + 500 + Math.floor(this.flame.current * 10);
-            let isNewHigh = false;
-            if (total > this.highScore) {
-                this.highScore = total;
-                localStorage.setItem('visarjan_highscore', this.highScore);
-                isNewHigh = true;
-            }
-            this.ui.showEnding(this.score, Math.floor(this.flame.current * 10), total, isNewHigh);
-        }, 5000); // Show ending screen after 5 seconds of peace
-    },
+    // Visarjan trigger removed for endless mode
     
     addScore(amount) {
         if (this.flame.isBappaBlessingActive) {
@@ -251,24 +232,16 @@ const Game = {
                 this.maxDistanceReached = this.distance;
             }
             
-            // Check progression
+            // Check progression (cycles through weather/themes endlessly)
             this.checkProgression();
             
-            // Check win condition
-            if (this.distance >= this.config.maxDistance) {
-                this.triggerVisarjan();
+            // Check Game Over condition explicitly via flame
+            if (this.flame.current <= 0 && this.state === 'PLAYING') {
+                this.gameOver();
             }
             
             this.ui.updateHUD();
             
-        } else if (this.state === 'VISARJAN') {
-            this.player.update(this.deltaTime, true); // Auto move
-            this.environment.update(this.deltaTime);
-            this.particles.update(this.deltaTime);
-            // Spawn floaty lights
-            if (Math.random() < 0.1) {
-                this.particles.createVisarjanLight();
-            }
         } else if (this.state === 'MENU' || this.state === 'TUTORIAL') {
             this.environment.update(this.deltaTime * 0.5); // slow pan
             this.particles.update(this.deltaTime);
@@ -276,27 +249,38 @@ const Game = {
     },
     
     checkProgression() {
-        const progress = this.distance / this.config.maxDistance;
+        // Endless progression: use modulo to cycle through weather patterns
+        const cycleDistance = this.distance % this.config.chunkSize;
+        const progress = cycleDistance / this.config.chunkSize;
         
-        let newSection = 0;
-        if (progress > 0.8) newSection = 4; // Final
-        else if (progress > 0.6) newSection = 3; // Storm
-        else if (progress > 0.4) newSection = 2; // Wind
-        else if (progress > 0.15) newSection = 1; // Procession
+        // 0: Calm, 1: Procession, 2: Wind, 3: Storm, 4: Night/Visarjan
+        let cycleSection = 0;
+        if (progress > 0.8) cycleSection = 4; // Special moment
+        else if (progress > 0.6) cycleSection = 3; // Storm
+        else if (progress > 0.4) cycleSection = 2; // Wind
+        else if (progress > 0.15) cycleSection = 1; // Procession
         
-        if (newSection !== this.currentSection) {
-            this.currentSection = newSection;
-            this.speedMultiplier = 1.0 + (this.currentSection * 0.15);
+        // Every 3000 units constitutes one full "loop". Increase difficulty cap
+        const globalLoops = Math.floor(this.distance / this.config.chunkSize);
+        
+        if (cycleSection !== this.currentSection) {
+            this.currentSection = cycleSection;
             
-            const titles = ["THE BEGINNING", "THE PROCESSION", "THE WIND", "THE STORM", "THE FINAL JOURNEY"];
-            if (this.state === 'PLAYING') {
-                this.ui.showSectionTitle(titles[this.currentSection]);
-            }
+            // Speed caps out so the game remains mathematically playable
+            this.speedMultiplier = 1.0 + Math.min(2.0, (globalLoops * 0.3) + (this.currentSection * 0.1));
             
             // Update environment weather
             if (this.currentSection === 2) this.environment.setWeather('WIND');
             else if (this.currentSection === 3) this.environment.setWeather('STORM');
-            else if (this.currentSection === 4) this.environment.setWeather('CALM');
+            else if (this.currentSection === 4) {
+                this.environment.setWeather('CALM');
+                this.environment.setVisarjanMode(); // Re-use for aesthetic background
+                this.ui.showSectionTitle("FESTIVAL CELEBRATION");
+            }
+            else {
+                this.environment.isVisarjan = false;
+                this.environment.setWeather('CALM');
+            }
         }
     },
     
@@ -317,7 +301,7 @@ const Game = {
         }
         
         // Draw Player
-        if (this.state === 'PLAYING' || this.state === 'VISARJAN') {
+        if (this.state === 'PLAYING') {
             this.player.draw(this.ctx);
         }
         
@@ -329,8 +313,6 @@ const Game = {
         // Draw Lighting / Visibility Mask
         if (this.state === 'PLAYING') {
             this.flame.drawLighting(this.ctx, this.player.x - this.camera.x, this.player.y);
-        } else if (this.state === 'VISARJAN') {
-            this.flame.drawVisarjanLighting(this.ctx);
         } else {
             // Menu lighting
             this.ctx.fillStyle = 'rgba(0,0,0,0.5)';
